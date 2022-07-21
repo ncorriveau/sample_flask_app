@@ -32,24 +32,24 @@ def register():
         elif not password:
             error = 'Password is required' 
 
-    if error is None:
-        try:
-            #executing a db INSERT statement if there is no error....(?,?) is the syntax to put variables into the statement
-            #remember to hash your password when u store them! never safe to store the values as is 
-            db.execute(
-                "INSERT into user (username,password) VALUES (?,?)",(username,generate_password_hash(password)),
-            )
-            db.commit()
-        #we could receive an 'IntegrityError' meaning that the username is already in the db 
-        except db.IntegrityError:
-            error = f"{username} is already registered"
+        if error is None:
+            try:
+                #executing a db INSERT statement if there is no error....(?,?) is the syntax to put variables into the statement
+                #remember to hash your password when u store them! never safe to store the values as is 
+                db.execute(
+                    "INSERT into user (username,password) VALUES (?,?)",(username,generate_password_hash(password)),
+                )
+                db.commit()
+            #we could receive an 'IntegrityError' meaning that the username is already in the db 
+            except db.IntegrityError:
+                error = f"{username} is already registered"
+        
+        #this will redirecct them to the login page,, using 'url_for' so we don't have the hardcode the url here (best practice)
+        else:
+            return redirect(url_for('/auth.login'))
     
-    #this will redirecct them to the login page,, using 'url_for' so we don't have the hardcode the url here (best practice)
-    else:
-        return redirect(url_for('/auth.login'))
-    
-    #stores messages that can be received during template rendering (so we would show them the error message)
-    flash(error)
+        #stores messages that can be received during template rendering (so we would show them the error message)
+        flash(error)
 
     #this is the HTML template people will see when they go to /auth/register URL 
     return render_template('/auth/register.html')
@@ -100,9 +100,30 @@ def load_logged_in_user():
         g.user = None
     
     else:
-        g.user = get_db.execute(
+        g.user = get_db().execute(
             "SELECT * FROM user WHERE id=?", (user_id,),
         ).fetchone()
+
+#create logout page 
+@bp.route('/logout')
+def logout():
+    #here we need to clear session so the id does not continue to load in the load_logged_in_user func
+    session.clear()
+    return redirect(url_for('index'))
+
+
+def login_required(view):
+    '''function creates a wrapper that can be used to wrap views and make sure somebody is logged in to use them. 
+    If they are already logged in this just invokes the view as is'''
+    @functools.wraps(view)
+    def wrapped_view(**kwargs):
+        if g.user is None:
+            #if not loggedin, redirect to login page 
+            #when you use Blueprints, the name of the blueprint prepends the name of the function for url_for() call like below
+            return redirect(url_for('auth.login'))
+        return view(**kwargs)
+    return wrapped_view
+
     
 
 
