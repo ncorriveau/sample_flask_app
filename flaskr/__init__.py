@@ -2,6 +2,8 @@ import os
 from tempfile import TemporaryFile
 from flask import Flask
 
+
+#this is what flask calls an 'application factory' 
 def create_app(test_config=None):
     #instance_relative_config = True means that config files are relative to instance folder 
     #instance folder should be outside of flaskr package and contain local data that shouldnt be committed to version control
@@ -29,7 +31,7 @@ def create_app(test_config=None):
 
     @app.route('/hello')
     def hello():
-        return 'Hello World'
+        return 'Hello, World'
 
     from . import db 
     #here we are teardown method and adding the command init_db to the app defined in db.py
